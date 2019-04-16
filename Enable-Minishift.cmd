@@ -1,0 +1,1 @@
+PowerShell -ExecutionPolicy Unrestricted -Command "& {Start-Process PowerShell -ArgumentList '-ExecutionPolicy Unrestricted -File ""%~dp0Enable-minishift.ps1""' -Verb RunAs}";
