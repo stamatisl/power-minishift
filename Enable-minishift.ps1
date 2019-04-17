@@ -1,4 +1,14 @@
-﻿function CheckDockerForWindows() {
+function CreatePath($installationpath) {
+
+    $AddedLocation = $installationpath
+    $Reg = "Registry::HKLM\System\CurrentControlSet\Control\Session Manager\Environment"
+    $OldPath = (Get-ItemProperty -Path "$Reg" -Name PATH).Path
+    $NewPath= $OldPath + ";" + $AddedLocation
+    Set-ItemProperty -Path "$Reg" -Name PATH -Value $NewPath
+
+}
+
+function CheckDockerForWindows() {
 
     [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
     
@@ -52,8 +62,9 @@ function StartMinishift($filenamepath) {
         Write-Output "Please wait ..."
         Start-Sleep -Seconds 5
     }
+
     & $filenamepath start --show-libmachine-logs | Out-Host
-    Write-Output "Minishift installation completed succesfully"
+    #Write-Output "Minishift installation completed succesfully"
 
 }
 
@@ -69,7 +80,7 @@ function SetupDriver($driver,$installationpath) {
     }
 
     if ($driver -eq "hyperv") { 
-        Import-Module –Name Hyper-V
+        Import-Module -Name Hyper-V
         Write-Host $driver
         $Hyperv_VM = Get-VM -Name minishift -ErrorAction SilentlyContinue
         if ($Hyperv_VM) { 
@@ -113,6 +124,9 @@ function InstallSoftware($filenamepath) {
     $ps.Start()
     $ps.WaitForExit()
     Write-Output "VirtualBox installation completed succesfully"
+    [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
+    [System.Windows.Forms.MessageBox]::Show("Please run Enable-Minishift.cmd again! :)","Information",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Warning)
+    exit
 
 }
 
@@ -155,7 +169,7 @@ function CheckHyperV() {
 
     if($hyperv.State -eq "Enabled") {
 
-        Import-Module –Name Hyper-V 
+        Import-Module -Name Hyper-V 
         Write-Host "Hyper-V is enabled."
         Add-Type -AssemblyName system.Windows.Forms
         $SetBackupLocation = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -166,6 +180,7 @@ function CheckHyperV() {
 
             $installationpath = $SetBackupLocation.SelectedPath
             Write-Host $installationpath
+            CreatePath $installationpath
 
             $url = "https://github.com/minishift/minishift/releases/download/v1.33.0/minishift-systemtray-1.33.0-windows-amd64.zip"
             $filenamepath = "$installationpath\minishift-systemtray-1.33.0-windows-amd64.zip"
@@ -225,6 +240,7 @@ function CheckHyperV() {
 
             $installationpath = $SetBackupLocation.SelectedPath
             Write-Host $installationpath
+            CreatePath $installationpath
         
             $software = "*Oracle VM VirtualBox*"
             $installed = CheckIfInstalled $software
@@ -262,7 +278,7 @@ function CheckHyperV() {
         $filenamepath = "$installationpath\minishift"
         SetupDriver "virtualbox" $installationpath
         StartMinishift $filenamepath
-
+        
         }
         
     }
@@ -273,40 +289,3 @@ CheckHyperV
 [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
 [System.Windows.Forms.MessageBox]::Show("Done!","Information",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Information)
 
-
-
-### COMMENTS ###
-#Write-Host "Press any key to continue ....."
-#$x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-
-# Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V –All
-# Disable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V
-# dism /Online /Disable-Feature:Microsoft-Hyper-V 
-# bcdedit /set hypervisorlaunchtype off
-
-# $net = Get-NetIPConfiguration | where {$_.IPv4DefaultGateway -ne $null } | select -ExpandProperty InterfaceAlias
-# New-VMSwitch -Name "External VM Switch" -AllowManagementOS $True -NetAdapterName $net
-# New-VMSwitch -Name "minishift0" -SwitchType "Internal" -NATSubnetAddress "10.11.22.0/24"
-# New-NetNat -Name "minishift0nat" -InternalIPInterfaceAddressPrefix "10.11.22.0/24"
-
-            
-# {
-# "hyperv-virtual-switch": "minishift0",
-# "vm-driver": "hyperv"
-# }
-# "vm-driver": "virtualbox"
-             
-# reg ADD "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Virtualization\Containers" /v TemplateVmCount /t REG_DWORD /d 0
-# reg ADD "HKLM\System\CurrentControlSet\Services\LanmanServer\Parameters" /v DisableStrictNameChecking /t REG_DWORD /d 1
-# Get-NetAdapter  get ifIndex
-# New-NetIPAddress -IPAddress 10.11.22.1 -PrefixLength 24 -InterfaceIndex 41
-# New-NetNat -Name "minishift0nat" -InternalIPInterfaceAddressPrefix 10.11.22.0/24
-# Get-VM -Name "minishift" | Get-VMNetworkAdapter | Connect-VMNetworkAdapter -SwitchName "minishift0"
-
-#$ps = new-object System.Diagnostics.Process
-#$ps.StartInfo.Filename = $filenamepath
-#$ps.StartInfo.Arguments = " start"
-#$ps.StartInfo.RedirectStandardOutput = $True
-#$ps.StartInfo.UseShellExecute = $false
-#$ps.Start() | Out-Host
-#$ps.WaitForExit()
